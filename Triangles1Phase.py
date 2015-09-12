@@ -13,13 +13,21 @@ import scipy
 
 
 def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
+    props = dict(boxstyle='round', facecolor='w', alpha=1);
+
+    injc=np.zeros(4);# get injection gas composition
+    injc=CrossoverPoints[0,0:-1]//(CrossoverPoints[0,-1]+K*(1-CrossoverPoints[0,-1]));
     
-    injc=CrossoverPoints[1,0:-1]; # get injection gas composition
     Rare1S=np.linspace(CrossoverPoints[0,-1],CrossoverPoints[2,-1],1000); # draw saturations in rarefaction
     Rare1df=df(Rare1S,0.2); # get speeds of rarefaction
-    Rare1df[Rare1S>0.8]=0; #saturations above residual not permitted 
+    Rare1df[Rare1S>CrossoverPoints[1,-1]]=0; #saturations above residual not permitted 
+    #Rare1df[Rare1S>CrossoverPoints[1,-1]]=0;
     Shock1S=np.zeros(2);# set up shock 1 vector
     Shock1S[0]=Rare1S[-1]; # shock 1 start at end of rarefaction
+    
+    TriangleshockSpeed=np.min(Rare1df[np.nonzero(Rare1df)]);
+    TriangleshockIndex=np.argmin(np.abs(Rare1df-TriangleshockSpeed));
+    
     Shock1S[-1]=CrossoverPoints[3,-1]; # shocks down to 2nd crossover
     Shock1Speed=np.zeros(2); # set up vector for shock 1 speed
     Shock1Speed=Rare1df[-1]+Shock1Speed; # set shocks 1 speed
@@ -47,7 +55,7 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     Speed[len(Rare1df)]=Shock1Speed[0]; # speed of 1st shock
     Speed[len(Rare1df)+1]=Shock2Speed;# speed of 2nd shock
     Speed[len(Rare1df)+2]=Shock2Speed;# speed of 2nd shock
-    Speed[len(Rare1df)+3]=EndShockSpeed;# speed of end shock
+    Speed[len(Rare1df)+3]=EndShockSpeed;# speed of end shock.5
     Speed[len(Rare1df)+4]=EndShockSpeed;# speed of end shock
     Speed[len(Rare1df)+5]=np.ceil(EndShockSpeed);# initial composition
     
@@ -62,6 +70,9 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     SSpeed[len(Rare1df)+3]=CrossoverPoints[4,-1];# jump to shock 2 saturation
     SSpeed[len(Rare1df)+4]=CrossoverPoints[-1,-1]; #end at initial composition saturation
     SSpeed[len(Rare1df)+5]=CrossoverPoints[-1,-1];#end at initial composition saturation
+    print(SSpeed[0])
+    ResWaterC=np.zeros(4);
+    
 
     for i in range(4): # fill CSpeed with total compositions for each component
         CSpeed[0:len(Rare1S),i]=np.linspace(CrossoverPoints[0,i],CrossoverPoints[2,i],len(Rare1S)); # fill rarefaction compositions
@@ -72,9 +83,17 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
         CSpeed[len(Rare1df)+4,i]=CrossoverPoints[-1,i]; # end composition
         CSpeed[len(Rare1df)+5,i]=CrossoverPoints[-1,i];# end composition
         cspeed[:,i]=CSpeed[:,i]/(SSpeed+K[i]*(1-SSpeed)); # compute gas phase compositions
-            
+    cspeed[0,3]=1-cspeed[0,1]-cspeed[0,2]-cspeed[0,0];
     plt.close('all') # start plotting stuff
     
+    SSpeed[TriangleshockIndex-1]=0.8;
+    SSpeed[TriangleshockIndex]=0.8;
+    SSpeed[0:TriangleshockIndex-1]=0.8;
+    Speed[0]=-.1;
+    Speed[1]=-0;
+    SSpeed[0]=1#CrossoverPoints[0,-1];
+    SSpeed[1]=1#CrossoverPoints[0,-1];
+
     plt.subplot(3,1,1) # subplot for gas saturation
     plt.plot(Speed,SSpeed,c='b',lw=2,label='Gas Saturation') # plot saturation
     plt.xlim([-0.1,3]) # set xlim below zero to start point
@@ -82,9 +101,9 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     plt.xticks([0,.5,1,1.5,2,2.5,3],['','','','','','']) # remove ticklabels
     #plt.legend(loc=1)
     plt.scatter(0,1,c='g',s=100) # initial composition point marker
-    plt.scatter(0,.8,s=100,marker='^',color='green',edgecolor='k') #start of rarefaction point
+    plt.scatter(TriangleshockSpeed,CrossoverPoints[1,-1],s=100,marker='^',color='green',edgecolor='k') #start of rarefaction point
     plt.scatter(Rare1df[-1],Rare1S[-1],s=100,marker='s',color='green',edgecolor='k') #start of rarefaction point
-
+    plt.text(2.8,.8,'$A$',fontsize=18,color='k',rotation=0,bbox=props)
     plt.scatter(Speed[len(Rare1df)+0],SSpeed[len(Rare1df)+0],marker='v',s=100,color='green',edgecolor='k') #marker for shock 1
     plt.scatter(Speed[len(Rare1df)+3],SSpeed[len(Rare1df)+3],marker='p',s=100,color='green',edgecolor='k')#marker for shock 2
     plt.scatter(Speed[len(Rare1df)+4],SSpeed[len(Rare1df)+4],marker='D',s=100,color='green',edgecolor='k')#marker for initial comp
@@ -105,7 +124,6 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
         plt.xlim([-0.1,3])
         plt.ylim([-0.,1])
         plt.legend(loc=2)
-    else:
         
         plt.subplot(3,1,2)#subplot for total composition C_i
         plt.stackplot(Speed,CSpeed[:,0],CSpeed[:,1],CSpeed[:,2],CSpeed[:,3],colors=[[1,.7,.7],[1,.2,.2],[.7,.7,1],[.2,.2,1]]) # stackplot for all 4 components
@@ -117,16 +135,19 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
         plt.text(1.3,.6,'$L$',fontsize=16,color='w') #label major liquid component
         plt.title('Total Composition')
         plt.xticks([0,.5,1,1.5,2,2.5,3],['','','','','',''])
-
-        plt.subplot(3,1,3) # set up plot for gas phase composition
+    else:
+        plt.subplot(3,1,2) # set up plot for gas phase composition
+        cspeed[Speed>EndShockSpeed]=np.nan;
         plt.stackplot(Speed,cspeed[:,0],cspeed[:,1],cspeed[:,2],cspeed[:,3],colors=[[1,.7,.7],[1,.2,.2],[.7,.7,1],[.2,.2,1]]) # stack plot of all gas phase comp
-        plt.text(.45,.3,'$G$',fontsize=16,color='w')# label major gas component
+        plt.text(.45,.4,'$G$',fontsize=16,color='w')# label major gas component
         plt.text(1.3,.4,'$g$',fontsize=16,color='k')#label trace gas component
-        plt.text(2.3,.4,'$l$',fontsize=16,color='k')#label trace liquid component
+        plt.text(2.1,.4,'$l$',fontsize=16,color='k')#label trace liquid component
         plt.xlabel('Speed') #xlabel for all plots
         plt.title('Gas Composition') # title for gas phase composition
         plt.ylim([0,1]) # ylim for volume fraction
         plt.xlim([-0.1,3]) # same xlim as above
+        plt.text(Speed[-2]-.02,.87,'$\leftarrow L$',fontsize=16,color='b')
+        plt.text(2.8,.1,'$B$',fontsize=18,color='k',rotation=0,bbox=props)
         
     plt.savefig('SpeedProf.pdf') # save to PDF plot
     
@@ -195,7 +216,12 @@ def Pyramid3D(CrossPoints,PhaseBound): #plot 3D tetrahedron of composition
     ax = fig.add_subplot(111, projection='3d'); #create 3D figure
     #ax.scatter(BaseCoordsTrans[2:,0],BaseCoordsTrans[2:,1],BaseCoordsTrans[2:,2],c='k'); 
     ax.plot(CP[:,0],CP[:,1],CP[:,2],c='g'); # plot solution in 3D space
-    ax.scatter(CP[:,0],CP[:,1],CP[:,2],c='g',edgecolor='g'); # scatter crossover points
+    ax.scatter(CP[0,0],CP[0,1],CP[0,2],c='g',edgecolor='g',marker='o'); # scatter crossover points
+    ax.scatter(CP[1,0],CP[1,1],CP[1,2],c='g',edgecolor='g',marker='^'); 
+    ax.scatter(CP[2,0],CP[2,1],CP[2,2],c='g',edgecolor='g',marker='s'); 
+    ax.scatter(CP[3,0],CP[3,1],CP[3,2],c='g',edgecolor='g',marker='v'); 
+    ax.scatter(CP[4,0],CP[4,1],CP[4,2],c='g',edgecolor='g',marker='p'); 
+    ax.scatter(CP[5,0],CP[5,1],CP[5,2],c='g',edgecolor='g',marker='D'); 
 
     base1=np.zeros([4,2]);# plot base triangles edges
     base1[0:3,0]=BaseCoordsTrans[1:,0];
@@ -259,10 +285,10 @@ def Pyramid3D(CrossPoints,PhaseBound): #plot 3D tetrahedron of composition
     ax.invert_zaxis() # invert axes to match diamond plot
     ax.invert_xaxis()
     plt.axis('off')
-    ax.text(BaseCoordsTrans[0,0],BaseCoordsTrans[1,0]+.05,BaseCoordsTrans[2,0],'$L$') # label vertices with components
-    ax.text(BaseCoordsTrans[0,1]+.20,BaseCoordsTrans[1,1]+.03,BaseCoordsTrans[2,1],'$g$')
-    ax.text(BaseCoordsTrans[0,2]+.25,BaseCoordsTrans[1,2],BaseCoordsTrans[2,2],'$G$')
-    ax.text(BaseCoordsTrans[0,3]-.05,BaseCoordsTrans[1,3],BaseCoordsTrans[2,3],'$l$')
+    ax.text(BaseCoordsTrans[0,0],BaseCoordsTrans[1,0]+.05,BaseCoordsTrans[2,0],'$L$',fontsize=18) # label vertices with components
+    ax.text(BaseCoordsTrans[0,1]+.20,BaseCoordsTrans[1,1]+.03,BaseCoordsTrans[2,1],'$g$',fontsize=18)
+    ax.text(BaseCoordsTrans[0,2]+.25,BaseCoordsTrans[1,2],BaseCoordsTrans[2,2],'$G$',fontsize=18)
+    ax.text(BaseCoordsTrans[0,3]-.05,BaseCoordsTrans[1,3],BaseCoordsTrans[2,3],'$l$',fontsize=18)
 
     plt.savefig('3DTest.pdf',format='pdf') #save plot to PDF
 
@@ -300,8 +326,9 @@ def FgPlots(Injc,Inic,K,CrossPoints): # plot fractional flow curves and switch p
     plt.plot(C,F,c='red',label='Injection \nTie Line')  # plot fractional flow curve with injection tie line
     plt.scatter(CrossPoints[0,3],CPY1[0],color='red',s=100) # plot crossover points on tie line 1
     plt.scatter(CrossPoints[1,3],CPY1[1],marker='^',color='red',s=100)
+    plt.plot([CrossPoints[0,3],CrossPoints[1,3]],[CPY1[0],CPY1[1]],c='k')
     plt.scatter(CrossPoints[2,3],CPY1[2],marker='s',color='red',s=100)
-    plt.plot([CrossPoints[2,3],InjTLB ],[CPY1[2],InjTLB],color='k',ls='-',lw=0.5,marker='',markersize=2,markerfacecolor='red')
+    plt.plot([CrossPoints[2,3],InjTLB ],[CPY1[2],InjTLB],color='k',ls='-',lw=1,marker='',markersize=2,markerfacecolor='red')
     plt.legend(loc=4,fontsize=13)
     plt.ylim([-0.0,1])
     #plt.axis('equal')
@@ -311,10 +338,12 @@ def FgPlots(Injc,Inic,K,CrossPoints): # plot fractional flow curves and switch p
     plt.xticks([0,.25,.5,.75,1],['0','0.25','0.50','0.75','1'],fontsize=14)
     plt.xlabel('$C_L$',fontsize=16)
     plt.ylabel('$F_L$  ',rotation=0,fontsize=16)
-    plt.text(CrossPoints[1,3]-.02,.8,'$\mathcal{W_1}$',color='red',fontsize=16)
+    plt.text(CrossPoints[1,3]-.15,.8,'$\mathcal{W_1}$',color='red',fontsize=16)
     plt.text(0,.8,'$\leftarrow$',color='red',fontsize=16,ha='left')
     plt.text(CrossPoints[2,3],.805,'$\leftarrow$',rotation=180,color='red',ha='right',fontsize=16)
-
+    props = dict(boxstyle='round', facecolor='w', alpha=1)
+    plt.text(0.5,.9,'A',fontsize=20,bbox=props)
+    
     #plt.plot([CrossPoints[1,3],CrossPoints[1,3]],[-.05,1.1],ls='--',c='red')
     plt.plot([CrossPoints[2,3],CrossPoints[2,3]],[-.05,1.1],ls='--',c='red')
     plt.plot([0,0],[-.05,1.1],ls='--',c='red')
@@ -356,7 +385,8 @@ def FgPlots(Injc,Inic,K,CrossPoints): # plot fractional flow curves and switch p
 
     plt.xlabel('$C_L$',fontsize=16)
     plt.ylabel('$F_L$  ',rotation=0,fontsize=16)
-    
+    plt.text(0.85,0.1,'B',fontsize=20,bbox=props)
+
     print('end speed 2')
     print((CPY[-1]-CPY[0])/(CrossPoints[-1,3]-CrossPoints[4,3]))
     
@@ -378,8 +408,6 @@ def FgPlots(Injc,Inic,K,CrossPoints): # plot fractional flow curves and switch p
         plt.scatter(CrossPointsL[5,-1],fI[5],marker='D',color='b')
         plt.plot([CrossPointsL[4,-1],CrossPointsL[5,-1]],[fI[4],fI[5]],c='k',lw=0.5)
         
-        print('end slope 3')
-        print((fI[4]-fI[5])/(CrossPointsL[4,-1]-CrossPointsL[5,-1]))
         
         plt.scatter([CrossPointsL[4,-1],CrossPointsL[5,-1]],[fI[4],fI[5]],color='k',edgecolor='k',s=6)
     
@@ -396,11 +424,19 @@ def FgPlots(Injc,Inic,K,CrossPoints): # plot fractional flow curves and switch p
     plt.savefig('FgTest.pdf',format='pdf') #save plot
     
 
-def TangentFind(c11,K1,Intercept,ResidualW): # finds location of 1st shock using tangent method
+def TangentFind(Injc,K,Intercept,ResidualW): # finds location of 1st shock using tangent method
     PlotOn=1;
     C=np.linspace(Intercept,1,100000); # set up vector of C values
-    S=(C-c11*K1)/(c11-c11*K1); # get saturation from K and C
+    K1=K[0];
+    K4=K[3];
+    c11=Injc[0];
+    c41=Injc[-1];
 
+    InjS=(0-K4*c41)/(c41-K4*c41);
+    InjC1=InjS*c11+K1*c11*(1-InjS);
+    
+    S=(C-c11*K1)/(c11-c11*K1); # get saturation from K and C
+    
     fg=Fg(S,ResidualW); # fractional flow 
     dfg=df(S,ResidualW); # derivative of fractional flow 
     F=c11*fg+(1-fg)*c11*K1; # flux term for C1s
@@ -415,20 +451,26 @@ def TangentFind(c11,K1,Intercept,ResidualW): # finds location of 1st shock using
     Obj=np.abs((F-Intercept)/(C-Intercept)-dF); #objective function for tangent find
     Obj[S<0]=1;
     Obj[S>1]=1;
+    Obj2=np.abs((F-InjC1)/(C-InjC1)-dF); 
+    Obj2[S<0]=100;
+    Obj2[S>1]=100;
+
     
     minTan=np.argmin(Obj); # find objective minimum
-    
+    minTan2=np.argmin(Obj2);
     if PlotOn==1:
         plt.close('all')
         plt.plot(C,F)
         #plt.plot(C,dF)
         #plt.plot(C,np.abs((F-Intercept)/(C-Intercept)))
         plt.plot([Intercept,C[minTan]],[Intercept,F[minTan]],c='red')
+        plt.plot([InjC1,C[minTan2]],[InjC1,F[minTan2]],c='red')
         plt.grid();
+        plt.scatter(InjC1,InjC1)
         plt.savefig('TanFind.png',format='png')
-        plt.show();
+        
     
-    return C[minTan];
+    return [C[minTan],C[minTan2]];
 
 
 def numIntPath(K,ResidualW,Spec,Face,StartInt): # numerically integrate non-tie line path
@@ -521,7 +563,6 @@ def NTLPaths(K,Face,StartInt): # computes series of NTL paths for plotting purpo
     #computes non-tie line eigenvector paths on face 1 or 2 of tetrahedron
     
     if Face==1: #determines which K values to use dependending on face
-
         K1=K[0];
         K2=K[2];
         K3=K[3];
@@ -530,7 +571,6 @@ def NTLPaths(K,Face,StartInt): # computes series of NTL paths for plotting purpo
         K1=K[0];
         K2=K[1];
         K3=K[3];
-        
         
     ResidualW=0.2; #set residual water saturation
     ResidualG=0;#set residual gas saturation
@@ -562,6 +602,7 @@ def NTLPaths(K,Face,StartInt): # computes series of NTL paths for plotting purpo
     c11Path=T[1]; # get c11 data
     C1Path=c11Path*SPath+(1-SPath)*c11Path*K1;
     c21Path=(1-K1*c11Path-K3+K3*c11Path)/(K2-K3);
+    c21Zero=np.argmin(np.abs(c21Path[:,-1]));
     C2Path=c21Path*SPath+(1-SPath)*c21Path*K2;
     C2Path[C2Path+C1Path>1]=np.nan;
     C1Path[C1Path<-1]=np.nan;
@@ -570,18 +611,67 @@ def NTLPaths(K,Face,StartInt): # computes series of NTL paths for plotting purpo
     #CPath[:,0]=C1Path;
     #CPath[:,1]=C2Path;
     SHPath=np.shape(SPath);
-    PlotOn=0;
+    props = dict(boxstyle='round', facecolor='w', alpha=1)
+    SPathPlot=np.zeros(SHPath);
+    SPathPlot=SPathPlot+SPath;
+    SPathPlot[SPathPlot<.1]=np.nan;
+    PlotOn=1;
     if PlotOn==1:
         plt.close('all')
         for i in range(SHPath[1]):
-            plt.plot(SPath[:,i],c11Path[:,i],c='red',lw=2);
-        plt.scatter(StartInt[0],StartInt[1],c='red',s=50)
+            SP=SPathPlot[:,i];
+            c11P=c11Path[:,i];
+            c11P[SP<0.1]=np.nan;
+            plt.plot(SP,c11P,c='red',lw=2);
         #if Face==2:
             #plt.close('all')
-        plt.quiver(S,c11,dx*1e5,dy*1e5)
         plt.ylim([0,1])
-        plt.show();
-        
+        if Face==1:
+            c1gZero=np.argmin(np.abs(c11Path[:,-1]));
+
+            plt.scatter(StartInt[0],StartInt[1],color='red',s=200,marker='v')
+            plt.quiver(S,c11,-dx*1e5,-dy*1e5)
+            plt.xlim([-0.05,1])
+            plt.ylim([-.05,1])
+            plt.xlabel('$S_{gas}$',fontsize=16)
+            plt.xticks(np.linspace(0,1,11),fontsize=16);
+            plt.yticks(np.linspace(0,1,11),fontsize=16);
+            plt.ylabel('$c_{g,gas}$',fontsize=20)
+            plt.title('Non-Tie Line Vectors: $g-L-l$ plane',fontsize=20)
+            #ax = plt.axes()
+            #ax.arrow(SPath[c1gZero,-1], 0, -SPath[c1gZero,-1]/2, 0, head_width=0.03, head_length=0.03, fc='b', ec='k')
+            plt.scatter(SPath[c1gZero,-1],0,marker='p',s=200,color='red')
+            plt.plot([0,SPath[c1gZero,-1]],[0,0],lw=2,color='b')
+            plt.scatter(0,0,marker='D',s=120,color='b')
+            plt.text(.23,.4,'$\mathcal{W}_3$',backgroundcolor='w',color='red',fontsize=25)
+            plt.text(.23,.4,'$\leftarrow$',backgroundcolor='none',color='red',fontsize=25,ha='right')
+            plt.text(.9,.9,'B',fontsize=25,bbox=props)
+            plt.text(SPath[c1gZero,-1]/4,0.05,'$\mathcal{W}_4$',backgroundcolor='w',color='b',fontsize=25)
+            plt.savefig('Vector1.pdf');
+            
+        else: 
+            plt.scatter(StartInt[0],StartInt[1],c='red',s=150,marker='s',edgecolor='red')
+            plt.quiver(S,c11,dx*1e5,dy*1e5)
+            plt.ylim([-0.05,1])
+            plt.xlim([0,1.2])
+            plt.xticks(np.linspace(0,1.2,13));
+            plt.xlabel('$S_{gas}$',fontsize=16)
+            plt.ylabel('$c_{g,gas}$',fontsize=20)
+            plt.xticks(np.linspace(0,1.2,13),fontsize=16);
+            plt.yticks(np.linspace(0,1,11),fontsize=16);
+
+            plt.scatter(1.14285714,StartInt[1],s=150,color='b')
+            plt.scatter(0.53068197,StartInt[1],s=150,marker='^',color='b')
+            plt.plot([StartInt[0],1.14285714],[StartInt[1],StartInt[1]],lw=2,c='b')
+            plt.title('Non-Tie Line Vectors: $g-G-L$ plane',fontsize=20)
+            plt.scatter(SPath[c21Zero,-1],c11Path[c21Zero,-1],c='red',s=200,marker='v',edgecolor='red')
+            plt.text(.2,.2,'$\mathcal{W}_2$',backgroundcolor='w',color='red',fontsize=25,ha='right')
+            plt.text(.18,.22,'$\leftarrow$',backgroundcolor='none',color='red',fontsize=25,ha='left',rotation=180)
+            plt.text(1.1,.9,'A',fontsize=25,bbox=props)
+            plt.text(1,StartInt[1]*1.5,'$\mathcal{W}_1$',backgroundcolor='none',color='b',fontsize=25)
+
+            plt.savefig('Vector2.pdf');
+
     if 1==0: #set up streamlines through vector field
         #STR=plt.streamplot(S, c11, np.ones(np.shape(dx)), dxdS, color='r');
         STR=plt.streamplot(S, c11, -dx, -dy, color='r',density=1.5);
@@ -752,13 +842,20 @@ def Tern():
     InjTLSLope=injc[0]*(K1-1)/(injc[1]*(K2-1)); #injection tie line slope
     InjTLB=InjC[0]-InjTLSLope*InjC[1]; # injection tie line intercepts
     
-    print('Injection Tie Line B True')
-    print(InjTLB)
 
     Crossover1=np.zeros(4); # set up array of crossover points
-    Crossover1[0]=TangentFind(InjC[0],K1,InjTLB,0.2);
+
+    TL1SRS=TangentFind(injc,K,InjTLB,0.2)
+
+    Crossover1[0]=TL1SRS[0];
     Crossover1[2]=(Crossover1[0]-InjTLB)/InjTLSLope;
     Crossover1[3]=1-Crossover1[0]-Crossover1[2];
+
+    SRS1=np.zeros(5);
+    SRS1[0]=TL1SRS[1];
+    SRS1[1]=(SRS1[0]-InjTLB)/InjTLSLope;
+    SRS1[3]=1-SRS1[0]-SRS1[1];
+    SRS1[4]=(SRS1[0]-injc[0]*K1)/(injc[0]-injc[0]*K1);
     
     SCrossover=(Crossover1[0]-injc[0]*K1)/(injc[0]-injc[0]*K1); #saturation at crossover points
 
@@ -804,15 +901,11 @@ def Tern():
     Curve1C2[ArgC2+1]=0;
     Curve1C1[Curve1C1>1]=1;
     
-    print('Size Curve 1')
-    print(np.shape(Curve1C2))
     CrossoverTLc11=1-b[1];
     SCrossover2=((Crossover2[0])-CrossoverTLc11*K1)/(CrossoverTLc11-CrossoverTLc11*K1);
     
     SCrossover2=(Crossover2[0]-b[1])/(b[0]-b[1]);
     
-    print('Cross2 S, c11, c21')
-    print(SCrossover2,CrossoverTLc11,c21Path[ArgC2,-1])
     #print('CrossoverSTest')
     #print(CrossoverSTest)
     
@@ -915,7 +1008,7 @@ def Tern():
     AM1=np.argmin(np.abs(Curve2C1));
     if AM1>Curve2C1[0]:
         PCross=np.polyfit([Curve2C1[AM1],Curve2C1[AM1+1]],[Curve2C2[AM1],Curve2C2[AM1+1]],1);
-    print(PCross)
+    
     
     Curve2C1[AM1+1:]=0;
     Curve2C2[AM1+1:]=PCross[1];
@@ -960,7 +1053,6 @@ def Tern():
         TLOut3[:,i+NTLSet1]=[c21Path[Minc11[i],i],K2*c21Path[Minc11[i],i]];
         TLOut4[0,i+NTLSet1]=1-c11Path[Minc11[i],i]-c21Path[Minc11[i],i];
         TLOut4[1,i+NTLSet1]=1-K2*c21Path[Minc11[i],i]-c21Path[Minc11[i],i];
-        print(i+NTLSet1-1)
         
     PhaseBound1[2,:]=[0,0,b0[0],1-b0[0]];
     PhaseBound0[2,:]=[0,0,b0[1],1-b0[1]];
@@ -1015,11 +1107,14 @@ def Tern():
     CrossPoints=np.zeros([6,5]);
     CrossPoints[0,:]=TotalSoln[0,:];
     #CrossPoints[1,:]=#TotalSoln[1,:];
-    CrossPoints[1,0]=injc[0]*0.8+(1-.8)*K[0]*injc[0];
-    CrossPoints[1,1]=injc[1]*0.8+(1-.8)*K[1]*injc[1];
-    CrossPoints[1,2]=injc[2]*0.8+(1-.8)*K[2]*injc[2];
-    CrossPoints[1,3]=injc[3]*0.8+(1-.8)*K[3]*injc[3];
-    CrossPoints[1,4]=0.8;
+    #CrossPoints[1,0]=injc[0]*0.8+(1-.8)*K[0]*injc[0];
+    #CrossPoints[1,1]=injc[1]*0.8+(1-.8)*K[1]*injc[1];
+    #CrossPoints[1,2]=injc[2]*0.8+(1-.8)*K[2]*injc[2];
+    #CrossPoints[1,3]=injc[3]*0.8+(1-.8)*K[3]*injc[3];
+    #CrossPoints[1,4]=0.8;
+    
+    CrossPoints[1,:]=SRS1;
+    
     CrossPoints[2,:]=TotalSoln[2,:];
     CrossPoints[3,:]=TotalSoln[Curve1L+1,:];
     CrossPoints[4,:]=TotalSoln[Curve2L+Curve1L,:];
@@ -1168,7 +1263,6 @@ def RotateDiam(TotalSoln,CrossPoints,NTLPathsOut,TLOut,PhaseBounds):
     Fill2[:,0]=PhaseBound1Rot[:,0];
     Fill2[:,1]=PhaseBound1Rot[:,1];
     Fill2[:,2]=[-PhaseBound1Rot[0,0]/np.sqrt(3)+1,1,PhaseBound1Rot[-1,0]/np.sqrt(3)+1];
-    print(PhaseBound1Rot)
     plt.fill_between(Fill1[:,0],Fill1[:,1],Fill1[:,2],alpha=.2,edgecolor='none') # plots 1 phase regions
     plt.fill_between(Fill2[:,0],Fill2[:,1],Fill2[:,2],alpha=.2,edgecolor='none',color='red')
     plt.fill_between([PhaseBound1Rot[0,0],np.sqrt(3)/2],[PhaseBound1Rot[0,1],1/2.0],[-PhaseBound1Rot[0,0]/np.sqrt(3)+1,1.0/2],edgecolor='none',alpha=.2,color='red')
@@ -1179,7 +1273,7 @@ def RotateDiam(TotalSoln,CrossPoints,NTLPathsOut,TLOut,PhaseBounds):
     plt.scatter(CrossRot[3,0],CrossRot[3,1],color='g',s=100,marker='v')
     plt.scatter(CrossRot[4,0],CrossRot[4,1],color='g',s=100,marker='p')
     plt.scatter(CrossRot[5,0],CrossRot[5,1],color='g',s=100,marker='D')
-    plt.text(CrossRot[1,0]-.15,CrossRot[1,1],'$\mathcal{W}_1$',rotation=37,fontsize=16,color='green')
+    plt.text(CrossRot[1,0]-.05,CrossRot[1,1]+.08,'$\mathcal{W}_1$',rotation=37,fontsize=16,color='green')
     plt.text(CrossRot[3,0]+.07,CrossRot[3,1]-.02,'$\mathcal{W}_2$',rotation=12,fontsize=16,color='green')
     plt.text(CrossRot[3,0]-.24,CrossRot[3,1],'$\mathcal{W}_3$',rotation=14,fontsize=16,color='green')
 
@@ -1195,6 +1289,8 @@ def RotateDiam(TotalSoln,CrossPoints,NTLPathsOut,TLOut,PhaseBounds):
     plt.text(.1,.05,'$\leftarrow$Pure Liquid',color='blue',fontsize=16)
     plt.text(TotalSolnRot2[-1,0]-.22,TotalSolnRot2[-1,1],'$\mathcal{W}_4$',fontsize=16,color='g')
     plt.text(TotalSolnRot2[-1,0]-.16,TotalSolnRot2[-1,1]+.015,'$\leftarrow$',fontsize=18,color='g',rotation=225)
+    props = dict(boxstyle='round', facecolor='w', alpha=1)
+
 
     plt.scatter([0,-np.sqrt(3)/2,0,np.sqrt(3)/2],[0,.5,1,.5],s=50,c='k') # scatter vertex
     plt.axis('equal')
