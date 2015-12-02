@@ -177,6 +177,8 @@ plt.subplots_adjust(left=0.05, bottom=0.4)
 l, = plt.plot(outFrame['Speed'], outFrame['Saturation'], lw=2, color='red')
 plt.axis([0, 2, -0.05, 1])
 plt.grid()
+plt.ylabel('Gas Saturation')
+plt.xlabel('Speed (x/t)')
 
 axcolor = 'lightgoldenrodyellow'
 
@@ -188,10 +190,10 @@ axDict['LiqExp']=plt.axes([0.25, 0.05, 0.65, 0.03], axisbg=axcolor)
 axDict['MaxGas']= plt.axes([0.25, 0.25, 0.65, 0.03], axisbg=axcolor)
 axDict['ViscRat']= plt.axes([0.25, 0.3, 0.65, 0.03], axisbg=axcolor)
 
-SliderDict={'LiqExp': Slider(axDict['LiqExp'], 'Liquid Exponent', 1,4, valinit=InitialValue['LiqExp'])}
+SliderDict={'LiqExp': Slider(axDict['LiqExp'], 'Liquid Perm Exponent', 1,4, valinit=InitialValue['LiqExp'])}
 SliderDict['ResGas']=Slider(axDict['ResGas'], 'Residual Gas', 0., .5, valinit=InitialValue['ResGas'])
 SliderDict['ResWater']= Slider(axDict['ResWater'], 'Residual Water', 0., .5, valinit=InitialValue['ResWater'])
-SliderDict['GasExp']= Slider(axDict['GasExp'], 'Gas Exponent', 2, 4, valinit=InitialValue['GasExp'])
+SliderDict['GasExp']= Slider(axDict['GasExp'], 'Gas Perm Exponent', 2, 4, valinit=InitialValue['GasExp'])
 #SliderDict['MaxWater']= Slider(axDict['MaxWater'], 'Max Water Rel Perm', 0, 1, valinit=InitialValue['MaxWater'])
 SliderDict['MaxGas']= Slider(axDict['MaxGas'], 'Max Gas Rel Perm', 0, 1, valinit=InitialValue['MaxGas'])
 SliderDict['ViscRat']= Slider(axDict['ViscRat'], 'Viscosity Ratio', 1, 1000, valinit=InitialValue['ViscRat'])
@@ -232,7 +234,6 @@ def reset(event):
     SliderDict['MaxGas'].reset()
     SliderDict['ViscRat'].reset()
 button.on_clicked(reset)
-
 
 plt.show()
 
