@@ -69,10 +69,7 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     SSpeed[len(Rare1df)+2]=CrossoverPoints[4,-1]; # jump to shock 2 saturation
     SSpeed[len(Rare1df)+3]=CrossoverPoints[4,-1];# jump to shock 2 saturation
     SSpeed[len(Rare1df)+4]=CrossoverPoints[-1,-1]; #end at initial composition saturation
-    SSpeed[len(Rare1df)+5]=CrossoverPoints[-1,-1];#end at initial composition saturation
-    print(SSpeed[0])
-    ResWaterC=np.zeros(4);
-    
+    SSpeed[len(Rare1df)+5]=CrossoverPoints[-1,-1];#end at initial composition saturation    
 
     for i in range(4): # fill CSpeed with total compositions for each component
         CSpeed[0:len(Rare1S),i]=np.linspace(CrossoverPoints[0,i],CrossoverPoints[2,i],len(Rare1S)); # fill rarefaction compositions
@@ -95,19 +92,28 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     SSpeed[1]=1#CrossoverPoints[0,-1];
 
     plt.subplot(3,1,1) # subplot for gas saturation
-    plt.plot(Speed,SSpeed,c='b',lw=2,label='Gas Saturation') # plot saturation
     plt.xlim([-0.1,3]) # set xlim below zero to start point
     plt.ylim([-0.1,1.1]) # set ylim below zero to show end point
     plt.xticks([0,.5,1,1.5,2,2.5,3],['','','','','','']) # remove ticklabels
     #plt.legend(loc=1)
-    plt.scatter(0,1,c='g',s=100) # initial composition point marker
-    plt.scatter(TriangleshockSpeed,CrossoverPoints[1,-1],s=100,marker='^',color='green',edgecolor='k') #start of rarefaction point
-    plt.scatter(Rare1df[-1],Rare1S[-1],s=100,marker='s',color='green',edgecolor='k') #start of rarefaction point
+    plt.scatter(0,1,c='g',s=100,zorder=2) # initial composition point marker
+    plt.scatter(TriangleshockSpeed,CrossoverPoints[1,-1],s=100,marker='^',color='green',edgecolor='k',zorder=2) #start of rarefaction point
+    plt.scatter(Rare1df[-1],Rare1S[-1],s=100,marker='s',color='green',edgecolor='k',zorder=2) #start of rarefaction point
     plt.text(2.8,.8,'$A$',fontsize=18,color='k',rotation=0,bbox=props)
-    plt.scatter(Speed[len(Rare1df)+0],SSpeed[len(Rare1df)+0],marker='v',s=100,color='green',edgecolor='k') #marker for shock 1
-    plt.scatter(Speed[len(Rare1df)+3],SSpeed[len(Rare1df)+3],marker='p',s=100,color='green',edgecolor='k')#marker for shock 2
-    plt.scatter(Speed[len(Rare1df)+4],SSpeed[len(Rare1df)+4],marker='D',s=100,color='green',edgecolor='k')#marker for initial comp
+    plt.scatter(.5*(Speed[len(Rare1df)+0]+Speed[len(Rare1df)+2]),SSpeed[len(Rare1df)+0],marker='v',s=100,color='green',edgecolor='k',zorder=2) #marker for shock 1
+    plt.scatter(.5*(Speed[len(Rare1df)+3]+Speed[len(Rare1df)+2]),SSpeed[len(Rare1df)+3],marker='p',s=150,color='green',edgecolor='k',zorder=2)#marker for shock 2
+    plt.scatter(.5*(Speed[len(Rare1df)+4]+3),SSpeed[len(Rare1df)+4],marker='D',s=100,color='green',edgecolor='k',zorder=2)#marker for initial comp
     plt.title('Gas Saturation') # title for plot
+    plt.text(Rare1df[-1]-.05,Rare1S[-1]+.35,'$\mathcal{W}_2$',fontsize=15)
+    plt.text(Rare1df[-1]-.09,Rare1S[-1]+.15,'$\leftarrow$',fontsize=25,rotation=90)
+    plt.text(Speed[len(Rare1df)+2]-.05,.45,'$\mathcal{W}_3$',fontsize=15)
+    plt.text(Speed[len(Rare1df)+2]-.09,SSpeed[len(Rare1df)+3]+.1,'$\leftarrow$',fontsize=25,rotation=90)
+    plt.text(Speed[len(Rare1df)+3]-.05,.45,'$\mathcal{W}_4$',fontsize=15)
+    plt.text(Speed[len(Rare1df)+3]-.09,SSpeed[len(Rare1df)+3]+.1,'$\leftarrow$',fontsize=25,rotation=90)
+    plt.plot(Speed,SSpeed,c='k',lw=2,label='Gas Saturation', zorder=1) # plot saturation
+    plt.plot([0,Speed[len(Rare1df)]],[0,0],c='k',ls='--')
+    plt.text(.5*Speed[len(Rare1df)]-.1,0.08,'$\mathcal{W}_1$',fontsize=15)
+
     FillPlot=1;
     if FillPlot==0:
         plt.subplot(3,1,2)
@@ -140,15 +146,32 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
         cspeed[Speed>EndShockSpeed]=np.nan;
         plt.stackplot(Speed,cspeed[:,0],cspeed[:,1],cspeed[:,2],cspeed[:,3],colors=[[1,.7,.7],[1,.2,.2],[.7,.7,1],[.2,.2,1]]) # stack plot of all gas phase comp
         plt.text(.45,.4,'$G$',fontsize=16,color='w')# label major gas component
-        plt.text(1.3,.4,'$g$',fontsize=16,color='k')#label trace gas component
+        plt.text(1.4,.4,'$g$',fontsize=16,color='k')#label trace gas component
         plt.text(2.1,.4,'$l$',fontsize=16,color='k')#label trace liquid component
-        plt.xlabel('Speed') #xlabel for all plots
         plt.title('Gas Composition') # title for gas phase composition
         plt.ylim([0,1]) # ylim for volume fraction
         plt.xlim([-0.1,3]) # same xlim as above
         plt.text(Speed[-2]-.02,.87,'$\leftarrow L$',fontsize=16,color='b')
-        plt.text(2.8,.1,'$B$',fontsize=18,color='k',rotation=0,bbox=props)
-        
+        plt.text(2.8,.15,'$B$',fontsize=18,color='k',rotation=0,bbox=props)
+        plt.xticks([0,.5,1,1.5,2,2.5,3],['','','','','',''])
+
+        plt.subplot(3,1,3)
+        Speed[-1]=3;
+        Speed[-2]=3;
+        Speed[-3]=3;
+        print(Speed)
+        plt.stackplot(Speed,cspeed[:,0]*K[0],cspeed[:,1]*K[1],cspeed[:,2]*K[2],cspeed[:,3]*K[3],colors=[[1,.7,.7],[1,.2,.2],[.7,.7,1],[.2,.2,1]]) # stack plot of all gas phase comp
+        #plt.stackplot([2.6,3],[cspeed[-1,0]*K[0],cspeed[-1,0]*K[0]],[cspeed[-1,1]*K[1],cspeed[-1,1]*K[1]],[cspeed[-1,2]*K[2],cspeed[-1,2]*K[2]],[cspeed[-1,3]*K[3],cspeed[-1,3]*K[3]],colors=[[1,.7,.7],[1,.2,.2],[.7,.7,1],[.2,.2,1]]) # stack plot of all gas phase comp
+        plt.xlabel('Speed') #xlabel for all plots
+        plt.ylim([0,1]) # ylim for volume fraction
+        plt.xlim([-0.1,3]) # same xlim as above
+        plt.text(2.8,.75,'$C$',fontsize=18,color='k',rotation=0,bbox=props)
+        plt.text(.45,.2,'$G$',color='w',fontsize=16)
+        plt.text(1.4,.12,'$g$',color=[1,.7,.7],fontsize=16)
+        plt.text(2.2,.03,'$l$',color='k',fontsize=16)
+        plt.text(1.4,.75,'$L$',fontsize=18,color='w')
+        plt.title('Liquid Composition')
+
     plt.savefig('SpeedProf.pdf') # save to PDF plot
     
 def TernCoords3D(xi): # function to convert cartesian to tetrahedral coordinates
