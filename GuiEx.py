@@ -173,7 +173,7 @@ InitialValue['ViscRat']=100
 outFrame=TanFind(InitialValue)
 
 fig, ax = plt.subplots()
-plt.subplots_adjust(left=0.05, bottom=0.4)
+plt.subplots_adjust(left=0.05, bottom=0.45)
 l, = plt.plot(outFrame['Speed'], outFrame['Saturation'], lw=2, color='red')
 plt.axis([0, 2, -0.05, 1])
 plt.grid()
