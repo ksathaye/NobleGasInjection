@@ -189,7 +189,7 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     plt.scatter(.46,SSpeed[len(Rare1df)+3],marker='p',s=100,color='green',edgecolor='k',zorder=2)#marker for shock 2
 
     plt.scatter(.2,0,marker='D',s=50,color='green',edgecolor='k',zorder=3)#marker for initial comp
-    plt.title('Gas Saturation') # title for plot
+    plt.title('Gas Saturation',fontsize=10) # title for plot
     plt.text(1/Rare1df[-1]-.05,Rare1S[-1]+.35,'$\mathcal{W}_2$',fontsize=15)
     plt.text(1/Rare1df[-1]-.15,Rare1S[-1]+.15,'$\leftarrow$',fontsize=25,rotation=90)
     plt.text(1/Speed[len(Rare1df)+2]-.05,.51,'$\mathcal{W}_3$',fontsize=15)
@@ -240,7 +240,7 @@ def GetSpeeds(CrossoverPoints,K,InjC,IniC,TotalSoln):
     #plt.text(2.8,.15,'$B$',fontsize=18,color='k',rotation=0,bbox=props)
     #plt.xticks([0,.5,1,1.5,2,2.5,3,3.5,4],['','','','','',''])
     plt.xlim([-0,4]) # set xlim below zero to start point
-    plt.xlabel('Time Since Injection (t/x)')
+    plt.xlabel('Pore Volumes Injected')
 
     plt.savefig('SpeedProfInvert.pdf') # save to PDF plot
 
