@@ -201,7 +201,6 @@ SliderDict['ViscRat']= Slider(axDict['ViscRat'], 'Viscosity Ratio', 1, 1000, val
 resetax = plt.axes([.78, 0.8, 0.1, 0.07])
 button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')
 
-
 def update(val):
     TanInput={'LiqExp':SliderDict['LiqExp'].val}
     TanInput['ResGas']=SliderDict['ResGas'].val
@@ -236,4 +235,3 @@ def reset(event):
 button.on_clicked(reset)
 
 plt.show()
-
